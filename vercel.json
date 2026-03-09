@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    { "source": "/optimize",        "destination": "/api/main" },
+    { "source": "/pokemon/:path*",  "destination": "/api/main" },
+    { "source": "/health",          "destination": "/api/main" },
+    { "source": "/score",           "destination": "/api/main" }
+  ]
+}
