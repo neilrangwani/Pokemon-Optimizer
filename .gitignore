@@ -3,7 +3,6 @@ __pycache__/
 *.py[cod]
 .venv/
 *.egg-info/
-dist/
 .env
 
 # uv
@@ -14,7 +13,6 @@ data/raw/
 
 # Frontend
 frontend/node_modules/
-frontend/dist/
 frontend/.env
 
 # IDE
@@ -24,3 +22,4 @@ frontend/.env
 
 # OS
 .DS_Store
+.vercel
