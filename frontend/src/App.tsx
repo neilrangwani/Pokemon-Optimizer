@@ -46,7 +46,8 @@ export default function App() {
   const generationsKey = JSON.stringify(request.generations);
   const gamesKey = JSON.stringify(request.games);
   useEffect(() => {
-    fetch("/pokemon/pool", {
+    const API = import.meta.env.VITE_API_URL ?? "";
+    fetch(`${API}/pokemon/pool`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -93,7 +94,7 @@ export default function App() {
         </h1>
         <span className="ml-auto flex items-center gap-4">
           <span className="text-[10px] text-[#9090B0] font-['JetBrains_Mono'] hidden sm:block">
-            Multi-objective combinatorial optimizer · C(n,6) search space · ILP exact solver
+            2.5B possible teams · exact optimal solution · &lt;3s
           </span>
           <a
             href="https://github.com/neilrangwani/Pokemon-Optimizer"
@@ -261,9 +262,6 @@ export default function App() {
                 <p className="text-[#9090B0] text-sm">
                   Configure constraints and hit{" "}
                   <span className="font-['Press_Start_2P'] text-[#CC0000] text-[10px]">OPTIMIZE</span>
-                </p>
-                <p className="text-[#4A4A5A] text-xs font-['JetBrains_Mono']">
-                  ILP exact solver · C(n, 6) combinatorial search
                 </p>
                 <a
                   href="https://github.com/neilrangwani/Pokemon-Optimizer"

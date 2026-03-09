@@ -26,7 +26,8 @@ export function useOptimizer() {
     setState({ status: "running", team: null, error: null, poolSize: null });
 
     try {
-      const resp = await fetch("/optimize", {
+      const API = import.meta.env.VITE_API_URL ?? "";
+      const resp = await fetch(`${API}/optimize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...request, solver: "ilp" }),
