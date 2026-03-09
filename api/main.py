@@ -3,34 +3,25 @@ api/main.py — FastAPI server for the Pokemon Team Optimizer.
 
 Endpoints
 ---------
-POST /optimize          — Run ILP, GA, or Greedy (or all) and return results.
-POST /optimize/stream   — Stream GA generation-by-generation updates via SSE.
-GET  /pokemon           — Return the full eligible pool for a given request config.
-GET  /health            — Health check.
-
-The SSE endpoint is the key one for the UI's GA animation panel.
-It streams JSON-encoded GenerationStats objects, then a final "done" event
-with the complete Team result.
+POST /optimize        — Run ILP and return the optimal team.
+POST /pokemon/pool    — Return the filtered eligible pool for given constraints.
+GET  /health          — Health check.
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sse_starlette.sse import EventSourceResponse
 
-from optimizer import ga_solver, greedy_solver, ilp_solver
+from optimizer import ilp_solver
 from optimizer.constraints import build_eligible_pool, load_all_pokemon
 from optimizer.scoring import classify_role
 from optimizer.models import (
     OptimizeRequest,
-    OptimizeResponse,
     Pokemon,
     ScoreWeights,
     Team,
@@ -117,120 +108,24 @@ async def get_pool(req: PoolRequest):
 
 
 # ---------------------------------------------------------------------------
-# Synchronous optimization (ILP + Greedy, and GA without streaming)
+# ILP optimization
 # ---------------------------------------------------------------------------
 
 @app.post("/optimize", response_model=dict)
 async def optimize(request: OptimizeRequest):
-    """
-    Run optimization with the specified solver(s). Returns all results at once.
-    For GA with live animation, use POST /optimize/stream instead.
-    """
-    results: dict[str, dict] = {}
+    """Run ILP optimization and return the optimal team."""
     pool = build_eligible_pool(request)
 
-    if request.solver in ("ilp", "all"):
-        try:
-            team, _ = await asyncio.to_thread(ilp_solver.solve, request)
-            results["ilp"] = _team_to_dict(team)
-        except Exception as e:
-            results["ilp"] = {"error": str(e)}
-
-    if request.solver in ("greedy", "all"):
-        try:
-            team, _ = await asyncio.to_thread(greedy_solver.solve, request)
-            results["greedy"] = _team_to_dict(team)
-        except Exception as e:
-            results["greedy"] = {"error": str(e)}
-
-    if request.solver in ("genetic", "all"):
-        try:
-            team, stats = await asyncio.to_thread(ga_solver.solve, request)
-            results["genetic"] = _team_to_dict(team)
-            results["genetic"]["generation_history"] = [
-                {
-                    "generation": s.generation,
-                    "best_fitness": s.best_fitness,
-                    "mean_fitness": s.mean_fitness,
-                }
-                for s in stats
-            ]
-        except Exception as e:
-            results["genetic"] = {"error": str(e)}
+    try:
+        team, _ = await asyncio.to_thread(ilp_solver.solve, request)
+        result = _team_to_dict(team)
+    except Exception as e:
+        result = {"error": str(e)}
 
     return {
         "pool_size": len(pool),
-        "results": results,
+        "results": {"ilp": result},
     }
-
-
-# ---------------------------------------------------------------------------
-# SSE streaming endpoint for GA animation
-# ---------------------------------------------------------------------------
-
-@app.post("/optimize/stream")
-async def optimize_stream(request: OptimizeRequest):
-    """
-    Stream GA generation statistics via Server-Sent Events.
-
-    Event types:
-      "generation" — GenerationStats JSON (one per generation)
-      "done"       — Final Team JSON when GA completes
-      "error"      — Error message string
-
-    Frontend connects with EventSource and listens for these event types.
-    """
-    async def event_generator():
-        try:
-            pool = build_eligible_pool(request)
-            yield {
-                "event": "pool_size",
-                "data": json.dumps({"pool_size": len(pool)}),
-            }
-
-            gen = ga_solver.run_ga(request)
-            final_team: Team | None = None
-
-            # asyncio.to_thread wraps StopIteration in RuntimeError; use sentinel instead
-            _DONE = object()
-
-            def _next_or_done():
-                try:
-                    return next(gen)
-                except StopIteration as e:
-                    return (e.value, _DONE)
-
-            while True:
-                result = await asyncio.to_thread(_next_or_done)
-                if isinstance(result, tuple) and len(result) == 2 and result[1] is _DONE:
-                    final_team = result[0]
-                    break
-                stats = result
-                yield {
-                    "event": "generation",
-                    "data": json.dumps({
-                        "generation": stats.generation,
-                        "best_fitness": stats.best_fitness,
-                        "mean_fitness": stats.mean_fitness,
-                        "best_team_names": stats.best_team_names,
-                        "converged": stats.converged,
-                    }),
-                }
-                await asyncio.sleep(0)
-
-            if final_team:
-                yield {
-                    "event": "done",
-                    "data": json.dumps(_team_to_dict(final_team)),
-                }
-
-        except Exception as e:
-            yield {
-                "event": "error",
-                "data": json.dumps({"message": str(e)}),
-            }
-
-    return EventSourceResponse(event_generator())
 
 
 # ---------------------------------------------------------------------------

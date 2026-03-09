@@ -17,13 +17,10 @@ interface Props {
   onChange: (gens: number[], games: string[]) => void;
 }
 
-// Gens with Pokemon data in data/pokemon.json.
-// Run `uv run python data/fetch_pokeapi.py` to add more.
-const AVAILABLE_GENS = new Set([1, 2, 3]);
 
 export function GenerationSelector({ selectedGens, selectedGames, onChange }: Props) {
   const [expandedGen, setExpandedGen] = useState<number | null>(1);
-  const gens = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const gens = [1, 2, 3];
 
   const toggleGen = (gen: number) => {
     const nowSelected = selectedGens.includes(gen);
@@ -66,17 +63,15 @@ export function GenerationSelector({ selectedGens, selectedGames, onChange }: Pr
       </div>
 
       {gens.map((gen) => {
+
         const active = selectedGens.includes(gen);
         const expanded = expandedGen === gen && active;
         const games = GENERATION_GAMES[gen] ?? [];
-        const hasData = AVAILABLE_GENS.has(gen);
 
         return (
           <div key={gen}>
             <button
-              disabled={!hasData}
               onClick={() => {
-                if (!hasData) return;
                 if (!active) {
                   toggleGen(gen);
                 } else {
@@ -85,26 +80,23 @@ export function GenerationSelector({ selectedGens, selectedGames, onChange }: Pr
               }}
               className="w-full flex items-center justify-between px-3 py-1.5 rounded text-xs font-bold transition-all duration-150 border font-['Inter']"
               style={{
-                backgroundColor: active ? "#CC0000" : hasData ? "#2A2A3E" : "#1A1A2A",
-                borderColor: active ? "#CC0000" : hasData ? "#3A3A5E" : "#252535",
-                color: active ? "white" : hasData ? "#9090B0" : "#3A3A5A",
-                cursor: hasData ? "pointer" : "not-allowed",
+                backgroundColor: active ? "#CC0000" : "#2A2A3E",
+                borderColor: active ? "#CC0000" : "#3A3A5E",
+                color: active ? "white" : "#9090B0",
+                cursor: "pointer",
               }}
             >
               <span>Gen {GEN_LABELS[gen - 1]}</span>
               {active && (
                 <span className="text-[10px] opacity-70">{expanded ? "▲" : "▼"}</span>
               )}
-              {!active && hasData && (
+              {!active && (
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleGen(gen); }}
                   className="text-[10px] opacity-60 hover:opacity-100"
                 >
                   +
                 </button>
-              )}
-              {!hasData && (
-                <span className="text-[9px] opacity-40 font-['JetBrains_Mono']">no data</span>
               )}
             </button>
 
@@ -134,6 +126,10 @@ export function GenerationSelector({ selectedGens, selectedGames, onChange }: Pr
           </div>
         );
       })}
+
+      <p className="text-[9px] text-[#4A4A6A] font-['JetBrains_Mono'] mt-1">
+        Gen IV+ coming soon
+      </p>
     </div>
   );
 }

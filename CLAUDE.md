@@ -11,16 +11,14 @@
 
 ## Primary Goal
 
-**This is a portfolio project targeting AI company hiring managers.**
+A fun project applying Operations Research techniques to Pokémon team building.
 
-The repo must demonstrate:
-- Rigorous applied math (combinatorial optimization, ILP, evolutionary algorithms)
-- Clean, well-documented code a senior engineer would respect
-- A polished, interactive UI that is immediately impressive in a browser demo
-- Real-world analogs articulated clearly (portfolio construction, fantasy sports drafting,
-  resource allocation, workforce scheduling)
+The goal is to build something genuinely useful and technically interesting:
+- Rigorous applied math (combinatorial optimization, ILP)
+- Clean, well-documented code
+- A polished, interactive UI that is immediately usable in a browser
 
-Lead with the engineering and math. Let Pokemon be the engaging application layer.
+Lead with the engineering and math. Let Pokémon be the engaging application layer.
 
 ---
 
@@ -190,25 +188,6 @@ This is the "clean" ORFE approach. Exact optimal solution for linear objectives.
 Non-linear objectives (e.g., type coverage "at least one covers type X") require
 auxiliary binary variables and Big-M constraints.
 
-#### Solver 2: Genetic Algorithm (GA)
-
-Custom implementation. Each chromosome is a team of 6 Pokemon indices.
-
-- **Population size:** 200
-- **Fitness function:** composite team score (same as ILP objective, no linearization needed)
-- **Selection:** tournament selection (k=5)
-- **Crossover:** uniform crossover on team slots; enforce no duplicates
-- **Mutation:** random swap of one team member with a pool Pokemon (rate: 0.1)
-- **Stopping criterion:** 500 generations or no improvement for 50 generations
-- **Elitism:** top 10 chromosomes preserved each generation
-
-GA handles non-linear objectives naturally. Visualizable: animate fitness over generations.
-
-#### Solver 3: Greedy Heuristic with Local Search (baseline)
-
-Fast O(n) baseline. Greedily add the Pokemon with the highest marginal score gain each step.
-Then run local search: swap each team member with every pool Pokemon; keep improvements.
-Used for benchmarking solve time and score quality vs. ILP and GA.
 
 ### Scoring Model
 
@@ -361,9 +340,6 @@ Styled as a dark navy panel with a red accent header bar. Sections separated by 
 
 ### Center Panel — Results
 
-**Solver tab bar:** `ILP` | `Genetic Algorithm` | `Greedy` — switch between solver results.
-Each tab shows solve time in small text: `ILP (0.4s)` | `GA (2.1s)` | `Greedy (0.02s)`.
-
 **Team Score header:**
 - Large number: `87 / 100` in `JetBrains Mono`
 - `?` bubble next to it explaining the composite score formula
@@ -429,7 +405,6 @@ Mandatory tooltip targets:
 | Stat Radar | What each stat does, what archetypes look like |
 | Each Play Style card | Full archetype description, example Pokemon, when to use it |
 | ILP solver tab | What integer linear programming is, why it finds the exact optimum |
-| GA solver tab | What a genetic algorithm is, how fitness/crossover/mutation work |
 | Anchor Pokemon | What anchoring does, constraint satisfaction explanation |
 | Availability Mode | WILD vs TRADEABLE vs EVENT vs TRANSFER explanation |
 | BST filter | What base stat total is, why it's a rough power proxy |
@@ -466,8 +441,6 @@ pokemon-team-optimizer/
 │   ├── models.py                  # Data models (Pokemon, Team, MoveSet, etc.)
 │   ├── scoring.py                 # Team scoring functions
 │   ├── ilp_solver.py              # Integer linear programming solver
-│   ├── ga_solver.py               # Genetic algorithm solver
-│   ├── greedy_solver.py           # Greedy baseline with local search
 │   └── constraints.py             # Constraint definitions and filter logic
 ├── frontend/
 │   ├── index.html
@@ -505,29 +478,12 @@ pokemon-team-optimizer/
 
 ---
 
-## README Framing (important for portfolio)
-
-Structure:
-
-1. **What it does:** "Multi-objective combinatorial optimizer for Pokemon team composition"
-2. **Why it's interesting:** C(1025, 6) ≈ 1.5 trillion possible teams; brute force impossible;
-   exact ILP vs. evolutionary search vs. greedy heuristic
-3. **Methodology:** ILP formulation with binary variables and linearized coverage constraints;
-   GA crossover/mutation design; scoring model components
-4. **Real-world analogs:** Portfolio construction, fantasy sports drafting, resource allocation,
-   workforce scheduling — same mathematical structure
-5. **Try it:** Link to live demo (GitHub Pages)
-6. **Technical details:** Architecture, stack, solver comparison table (score, solve time)
-
----
 
 ## Definition of Done
 
 - [ ] Static Pokemon dataset built from PokéAPI (all gens, with movesets)
 - [ ] Type effectiveness matrix complete and tested
 - [ ] ILP solver produces optimal teams for linear objectives
-- [ ] GA solver produces competitive teams with live generation animation
-- [ ] Greedy baseline benchmarked against both solvers
 - [ ] Play style selector adjusts weights and affects team composition visibly
 - [ ] Anchor Pokemon constraint works correctly in all solvers
 - [ ] Legendary toggle filters correctly

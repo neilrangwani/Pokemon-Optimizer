@@ -16,6 +16,7 @@ interface Props {
   solver: string;
   solveTime: number;
   selectedMember: string | null;
+  highlightedMembers: string[];
   onSelectMember: (name: string | null) => void;
 }
 
@@ -27,14 +28,17 @@ const SCORE_COMPONENTS = [
   { key: "moveset_quality",    label: "Movesets", color: "#F95587" },
 ] as const;
 
-export function TeamDisplay({ members, score, breakdown, solver, solveTime, selectedMember, onSelectMember }: Props) {
+export function TeamDisplay({ members, score, breakdown, solver, solveTime, selectedMember, highlightedMembers, onSelectMember }: Props) {
   const selectedPokemon = selectedMember ? members.find((m) => m.name === selectedMember) : null;
 
   return (
     <div className="space-y-4">
       {/* Score header */}
       <div className="flex items-center gap-3">
-        <div className="flex items-baseline gap-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[11px] font-semibold text-[#9090B0] uppercase tracking-wider self-end mb-1">
+            Optimization Score
+          </span>
           <span className="text-4xl font-bold text-[#FAFAF2] font-['JetBrains_Mono']">
             {score.toFixed(1)}
           </span>
@@ -91,7 +95,7 @@ export function TeamDisplay({ members, score, breakdown, solver, solveTime, sele
             key={member.name}
             member={member}
             color={MEMBER_COLORS[i]}
-            selected={selectedMember === member.name}
+            selected={highlightedMembers.includes(member.name)}
             onToggle={() => onSelectMember(selectedMember === member.name ? null : member.name)}
           />
         ))}

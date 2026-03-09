@@ -7,7 +7,7 @@
  * Right:  Analysis panel (radar chart, type coverage, ILP formulation).
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { OptimizeRequest } from "./types";
 import { GenerationSelector } from "./components/ConfigPanel/GenerationSelector";
 import { PlayStyleSelector } from "./components/ConfigPanel/PlayStyleSelector";
@@ -20,7 +20,7 @@ import { useOptimizer } from "./hooks/useOptimizer";
 
 const DEFAULT_REQUEST: OptimizeRequest = {
   generations: [1],
-  games: [],
+  games: ["Yellow"],
   availability_mode: "COMPETITIVE",
   play_style: "BALANCED",
   weather_condition: null,
@@ -34,14 +34,52 @@ const DEFAULT_REQUEST: OptimizeRequest = {
 
 export default function App() {
   const [request, setRequest] = useState<OptimizeRequest>(DEFAULT_REQUEST);
+  // selectedMember — the ONE member whose detail pane is open (card/radar click)
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  // highlightedMembers — cards with a colored border (can be multiple, e.g. after clicking a type vulnerability)
+  const [highlightedMembers, setHighlightedMembers] = useState<string[]>([]);
+  const [poolCandidates, setPoolCandidates] = useState<{ name: string; display_name: string }[]>([]);
   const { state, optimize, cancel } = useOptimizer();
+
+  // Fetch eligible Pokémon names whenever generation/availability filters change,
+  // so the anchor picker autocomplete always reflects the current constraints.
+  const generationsKey = JSON.stringify(request.generations);
+  const gamesKey = JSON.stringify(request.games);
+  useEffect(() => {
+    fetch("/pokemon/pool", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        generations: request.generations,
+        games: request.games,
+        availability_mode: request.availability_mode,
+        allow_legendaries: request.allow_legendaries,
+        min_bst: request.min_bst,
+      }),
+    })
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: { name: string; display_name: string }[]) => setPoolCandidates(data))
+      .catch(() => {});
+  }, [generationsKey, gamesKey, request.availability_mode, request.allow_legendaries, request.min_bst]);
 
   const updateRequest = (patch: Partial<OptimizeRequest>) =>
     setRequest((r) => ({ ...r, ...patch }));
 
+  // Single-member selection: opens detail pane + highlights that one card
+  const handleSelectMember = (name: string | null) => {
+    setSelectedMember(name);
+    setHighlightedMembers(name ? [name] : []);
+  };
+
+  // Multi-member highlight: highlights multiple cards, closes detail pane
+  const handleHighlightMembers = (names: string[]) => {
+    setSelectedMember(null);
+    setHighlightedMembers(names);
+  };
+
   const handleOptimize = () => {
     setSelectedMember(null);
+    setHighlightedMembers([]);
     optimize(request);
   };
 
@@ -51,7 +89,7 @@ export default function App() {
       <header className="bg-[#1A1A2E] border-b border-[#CC0000] px-6 py-3 flex items-center gap-3 flex-shrink-0">
         <span className="text-[#CC0000] text-lg">◉</span>
         <h1 className="text-xs font-['Press_Start_2P'] text-[#FAFAF2] tracking-wide">
-          Pokemon Team Optimizer
+          Pokémon Team Optimizer
         </h1>
         <span className="ml-auto flex items-center gap-4">
           <span className="text-[10px] text-[#9090B0] font-['JetBrains_Mono'] hidden sm:block">
@@ -133,37 +171,46 @@ export default function App() {
               {/* Anchor Pokémon */}
               <AnchorPicker
                 anchors={request.anchor_pokemon}
+                candidates={poolCandidates}
                 onChange={(anchors) => updateRequest({ anchor_pokemon: anchors })}
               />
 
               <div className="border-t border-dotted border-[#3A3A5E]" />
 
               {/* Legendaries toggle */}
-              <div className="flex items-center justify-between">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#FAFAF2]">Legendaries</span>
+                  <span className="text-xs font-semibold text-[#FAFAF2] uppercase tracking-wider">
+                    Legendaries
+                  </span>
                   <Tooltip title="Allow Legendaries">
                     Legendary and Mythical Pokémon (Mewtwo, Lugia, Arceus, etc.) are excluded
                     by default. Enable to include them in the optimization pool.
                   </Tooltip>
                 </div>
-                <button
-                  onClick={() => updateRequest({ allow_legendaries: !request.allow_legendaries })}
-                  className="w-9 h-5 rounded-full transition-colors relative flex-shrink-0"
-                  style={{ backgroundColor: request.allow_legendaries ? "#CC0000" : "#3A3A5E" }}
-                  aria-checked={request.allow_legendaries}
-                  role="switch"
-                >
-                  <span
-                    className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
-                    style={{ transform: request.allow_legendaries ? "translateX(16px)" : "translateX(2px)" }}
-                  />
-                </button>
+                <div className="flex rounded overflow-hidden border border-[#3A3A5E]">
+                  {([
+                    { value: false, label: "Exclude" },
+                    { value: true,  label: "Allow"   },
+                  ] as const).map(({ value, label }) => (
+                    <button
+                      key={label}
+                      onClick={() => updateRequest({ allow_legendaries: value })}
+                      className="flex-1 py-1.5 text-[10px] font-semibold transition-colors"
+                      style={{
+                        backgroundColor: request.allow_legendaries === value ? "#CC0000" : "#2A2A3E",
+                        color: request.allow_legendaries === value ? "white" : "#9090B0",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {state.poolSize !== null && (
+              {poolCandidates.length > 0 && (
                 <div className="text-[10px] text-[#9090B0] font-['JetBrains_Mono']">
-                  Pool: <span className="text-[#FAFAF2]">{state.poolSize}</span> eligible Pokémon
+                  Pool: <span className="text-[#FAFAF2]">{poolCandidates.length}</span> eligible Pokémon
                 </div>
               )}
             </div>
@@ -246,7 +293,8 @@ export default function App() {
               solver={state.team.solver}
               solveTime={state.team.solve_time_seconds}
               selectedMember={selectedMember}
-              onSelectMember={setSelectedMember}
+              highlightedMembers={highlightedMembers}
+              onSelectMember={handleSelectMember}
             />
           )}
         </main>
@@ -273,7 +321,7 @@ export default function App() {
                     <StatRadar
                       members={state.team.members}
                       selectedMember={selectedMember}
-                      onSelectMember={setSelectedMember}
+                      onSelectMember={handleSelectMember}
                     />
                   </div>
                 </div>
@@ -288,7 +336,13 @@ export default function App() {
                     </Tooltip>
                   </div>
                   <div className="bg-[#0F0F20] rounded border border-[#3A3A5E] p-3">
-                    <TypeCoverage members={state.team.members} />
+                    <TypeCoverage
+                      members={state.team.members}
+                      selectedMember={selectedMember}
+                      highlightedMembers={highlightedMembers}
+                      onSelectMember={handleSelectMember}
+                      onHighlightMembers={handleHighlightMembers}
+                    />
                   </div>
                 </div>
               </>
@@ -299,9 +353,9 @@ export default function App() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-semibold text-[#FAFAF2]">ILP Formulation</span>
                 <Tooltip title="Integer Linear Programming">
-                  <p className="mb-1.5">This optimizer solves an <strong>Integer Linear Program</strong> using the CBC branch-and-bound solver via PuLP.</p>
-                  <p className="mb-1.5">ILP guarantees a <strong>globally optimal</strong> solution within the time limit — not a heuristic approximation.</p>
-                  <p>Real-world analogs: portfolio construction, sports drafting, crew scheduling, supply chain allocation.</p>
+                  <p className="mb-1.5">This optimizer solves an <strong>Integer Linear Program (ILP)</strong>. ILP guarantees a <strong>globally optimal</strong> solution, not a heuristic approximation, to an optimization problem framed as a series of linear equations.</p>
+                  <p className="mb-1.5">Real-world analogs: portfolio construction, sports drafting, crew scheduling, supply chain allocation.</p>
+                  <p>For more information, <a href="https://github.com/neilrangwani/Pokemon-Optimizer/blob/main/README.md" target="_blank" rel="noopener noreferrer" style={{ color: "#CC0000" }} className="underline">click here</a>.</p>
                 </Tooltip>
               </div>
               <div className="bg-[#0F0F20] rounded border border-[#3A3A5E] p-3 space-y-2 font-['JetBrains_Mono'] text-[10px]">

@@ -53,16 +53,20 @@ from optimizer.constraints import build_eligible_pool, validate_team
 from optimizer.models import (
     OptimizeRequest,
     OptimizeResponse,
+    PlayStyle,
     Pokemon,
+    PokemonRole,
     PokemonType,
     ScoreWeights,
     Team,
     TeamMember,
+    WeatherCondition,
 )
 from optimizer.scoring import (
     ROLE_THRESHOLDS,
     TYPE_FREQUENCY_WEIGHTS,
     TYPES,
+    WEATHER_SYNERGY,
     classify_role,
     load_type_chart,
     score_team,
@@ -76,6 +80,53 @@ ARCHETYPES: dict[str, callable] = {
     "bulky_attacker": lambda p: p.stats.hp >= 80 and (p.stats.attack >= 90 or p.stats.sp_atk >= 90) and p.stats.speed < 100,
     "speed_control":  lambda p: p.stats.speed >= 110 or p.stats.speed <= 55,
 }
+
+
+def _compute_style_fitness(
+    idx_to_pokemon: dict[int, Pokemon],
+    play_style: PlayStyle,
+    weather: WeatherCondition | None,
+) -> dict[int, float]:
+    """
+    Per-Pokémon affinity score for the chosen play style, normalized to [0, 1].
+
+    This replaces the raw BST proxy used previously, giving the ILP a strong,
+    style-sensitive signal when selecting which Pokémon to include.
+    """
+    raw: dict[int, float] = {}
+    for i, p in idx_to_pokemon.items():
+        s = p.stats
+        if play_style == PlayStyle.HYPER_OFFENSE:
+            # Fast hard-hitters: reward high attack + speed
+            raw[i] = (s.attack + s.sp_atk) * 0.5 + s.speed
+        elif play_style == PlayStyle.STALL:
+            # Walls: reward high bulk
+            raw[i] = (s.defense + s.sp_def) * 0.5 + s.hp
+        elif play_style == PlayStyle.TRICK_ROOM:
+            # Powerful + slow: penalize speed above threshold
+            atk = max(s.attack, s.sp_atk)
+            slowness_bonus = max(0, ROLE_THRESHOLDS["speed_tr"] - s.speed) * 3
+            raw[i] = atk + slowness_bonus
+        elif play_style == PlayStyle.SETUP_SWEEPER:
+            # Offensive power with some speed
+            raw[i] = (s.attack + s.sp_atk) * 0.6 + s.speed * 0.4
+        elif play_style == PlayStyle.WEATHER and weather is not None:
+            synergy = WEATHER_SYNERGY.get(weather, {})
+            base = float(s.total)
+            if any(t.value in synergy.get("boost_types", set()) for t in p.types):
+                base += 100
+            if any(a.name in synergy.get("abilities", set()) for a in p.abilities):
+                base += 80
+            if any(a.name in synergy.get("setter_abilities", set()) for a in p.abilities):
+                base += 120
+            raw[i] = base
+        else:  # BALANCED
+            raw[i] = float(s.total)
+
+    max_val = max(raw.values()) if raw else 1.0
+    if max_val <= 0:
+        return {i: 0.5 for i in raw}
+    return {i: v / max_val for i, v in raw.items()}
 
 
 def _covers_type_se(pokemon: Pokemon, target_type: str, chart: dict) -> bool:
@@ -138,10 +189,19 @@ def solve(request: OptimizeRequest) -> tuple[Team, float]:
         for arch, fn in ARCHETYPES.items()
     }
 
-    # Per-Pokemon stat score (contributes to moveset_quality component)
-    # Normalize BST to [0, 1] as a simple proxy when no moveset data exists
-    max_bst = max(p.bst for p in pool)
-    bst_score = {i: p.bst / max_bst for i, p in idx_to_pokemon.items()}
+    # Per-Pokémon style fitness score (replaces raw BST proxy)
+    style_fitness = _compute_style_fitness(idx_to_pokemon, request.play_style, request.weather_condition)
+
+    # Role index sets for style-aware role diversity term
+    sweeper_roles = {PokemonRole.PHYSICAL_SWEEPER, PokemonRole.SPECIAL_SWEEPER}
+    wall_roles    = {PokemonRole.PHYSICAL_WALL, PokemonRole.SPECIAL_WALL, PokemonRole.SUPPORT}
+    sweeper_indices = [i for i, p in idx_to_pokemon.items() if classify_role(p) in sweeper_roles]
+    wall_indices    = [i for i, p in idx_to_pokemon.items() if classify_role(p) in wall_roles]
+    tr_indices      = [
+        i for i, p in idx_to_pokemon.items()
+        if p.stats.speed <= ROLE_THRESHOLDS["speed_tr"]
+        and (p.stats.attack >= 90 or p.stats.sp_atk >= 90)
+    ]
 
     # ---------------------------------------------------------------------------
     # Build the LP
@@ -224,11 +284,18 @@ def solve(request: OptimizeRequest) -> tuple[Team, float]:
     # W3: Stat distribution (archetype coverage)
     stat_dist = pulp.lpSum(z[arch] for arch in ARCHETYPES) / len(ARCHETYPES)
 
-    # W4: Role diversity (approximate via archetype coverage for ILP)
-    role_div = stat_dist  # ILP uses same archetype proxy
+    # W4: Role diversity — style-specific: reward the role composition the style demands
+    if request.play_style == PlayStyle.HYPER_OFFENSE and sweeper_indices:
+        role_div = pulp.lpSum(x[i] for i in sweeper_indices) / 6
+    elif request.play_style == PlayStyle.STALL and wall_indices:
+        role_div = pulp.lpSum(x[i] for i in wall_indices) / 6
+    elif request.play_style == PlayStyle.TRICK_ROOM and tr_indices:
+        role_div = pulp.lpSum(x[i] for i in tr_indices) / 6
+    else:
+        role_div = stat_dist  # General archetype diversity for other styles
 
-    # W5: Moveset quality (BST proxy per pokemon)
-    moveset_q = pulp.lpSum(bst_score[i] * x[i] for i in range(n)) / 6
+    # W5: Style fitness — per-Pokémon affinity score for the chosen play style
+    moveset_q = pulp.lpSum(style_fitness[i] * x[i] for i in range(n)) / 6
 
     prob += (
         weights.offensive_coverage * offensive

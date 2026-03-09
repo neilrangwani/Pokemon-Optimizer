@@ -199,7 +199,7 @@ class Team(BaseModel):
     members: list[TeamMember] = Field(min_length=1, max_length=6)
     score: float = 0.0
     score_breakdown: dict[str, float] = Field(default_factory=dict)
-    solver: str = ""              # "ilp", "genetic", "greedy"
+    solver: str = ""              # "ilp"
     solve_time_seconds: float = 0.0
 
     @property
@@ -222,30 +222,33 @@ class ScoreWeights(BaseModel):
     @classmethod
     def for_play_style(cls, style: PlayStyle, weather: WeatherCondition | None = None) -> "ScoreWeights":
         """Return preset weights tuned for each competitive play style."""
+        # moveset_quality slot is repurposed as "style fitness" in the ILP —
+        # a per-Pokémon score measuring how well it fits the chosen play style.
+        # Higher weight here = stronger style enforcement.
         presets: dict[PlayStyle, dict] = {
             PlayStyle.HYPER_OFFENSE: dict(
-                offensive_coverage=0.40, defensive_synergy=0.10,
-                stat_distribution=0.25, role_diversity=0.15, moveset_quality=0.10,
+                offensive_coverage=0.35, defensive_synergy=0.05,
+                stat_distribution=0.15, role_diversity=0.20, moveset_quality=0.25,
             ),
             PlayStyle.BALANCED: dict(
                 offensive_coverage=0.25, defensive_synergy=0.25,
                 stat_distribution=0.20, role_diversity=0.20, moveset_quality=0.10,
             ),
             PlayStyle.STALL: dict(
-                offensive_coverage=0.10, defensive_synergy=0.40,
-                stat_distribution=0.25, role_diversity=0.15, moveset_quality=0.10,
+                offensive_coverage=0.05, defensive_synergy=0.35,
+                stat_distribution=0.15, role_diversity=0.20, moveset_quality=0.25,
             ),
             PlayStyle.WEATHER: dict(
-                offensive_coverage=0.35, defensive_synergy=0.20,
-                stat_distribution=0.15, role_diversity=0.20, moveset_quality=0.10,
+                offensive_coverage=0.20, defensive_synergy=0.15,
+                stat_distribution=0.15, role_diversity=0.20, moveset_quality=0.30,
             ),
             PlayStyle.TRICK_ROOM: dict(
-                offensive_coverage=0.30, defensive_synergy=0.20,
-                stat_distribution=0.25, role_diversity=0.15, moveset_quality=0.10,
+                offensive_coverage=0.15, defensive_synergy=0.15,
+                stat_distribution=0.20, role_diversity=0.25, moveset_quality=0.25,
             ),
             PlayStyle.SETUP_SWEEPER: dict(
-                offensive_coverage=0.35, defensive_synergy=0.15,
-                stat_distribution=0.20, role_diversity=0.20, moveset_quality=0.10,
+                offensive_coverage=0.30, defensive_synergy=0.10,
+                stat_distribution=0.20, role_diversity=0.15, moveset_quality=0.25,
             ),
         }
         return cls(**presets.get(style, {}))
@@ -263,7 +266,7 @@ class OptimizeRequest(BaseModel):
     min_bst: int = Field(default=0, ge=0, le=800)
     required_types: list[PokemonType] = Field(default_factory=list)
     weights: ScoreWeights | None = None   # None = use play_style defaults
-    solver: Literal["ilp", "genetic", "greedy", "all"] = "ilp"
+    solver: Literal["ilp"] = "ilp"
 
     @model_validator(mode="after")
     def set_default_weights(self) -> "OptimizeRequest":

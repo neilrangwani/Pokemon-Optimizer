@@ -167,7 +167,7 @@ def build_eligible_pool(request: OptimizeRequest) -> list[Pokemon]:
             continue
 
         # 0. Exclude battle-only / cosmetic-only alternate forms.
-        # Regional variants (-alola, -galar, -hisui, -paldea) are kept — they're distinct Pokemon.
+        # Regional variants are only included when the generation that introduced them is selected.
         _name = p.name
         if (
             "-mega" in _name          # Mega Evolutions
@@ -177,6 +177,22 @@ def build_eligible_pool(request: OptimizeRequest) -> list[Pokemon]:
             or "-cap" in _name        # Pikachu cap variants
             or _name in {"pikachu-starter", "eevee-starter"}
         ):
+            continue
+
+        # Regional variants: only include when the originating region's generation is selected.
+        # Alolan forms = Gen 7, Galarian/Hisuian = Gen 8, Paldean = Gen 9.
+        _REGIONAL_GEN: dict[str, int] = {
+            "-alola": 7,
+            "-galar": 8,
+            "-hisui": 8,
+            "-paldea": 9,
+        }
+        _skip = False
+        for suffix, min_gen in _REGIONAL_GEN.items():
+            if suffix in _name and min_gen not in selected_gens:
+                _skip = True
+                break
+        if _skip:
             continue
 
         # 1. Generation/game scope

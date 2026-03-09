@@ -13,7 +13,7 @@ export type WeatherCondition = "RAIN" | "SUN" | "SAND" | "SNOW";
 
 export type AvailabilityMode = "COMPETITIVE" | "CARTRIDGE" | "SOLO_RUN";
 
-export type SolverType = "ilp" | "genetic" | "greedy" | "all";
+export type SolverType = "ilp";
 
 export type PokemonRole =
   | "PHYSICAL_SWEEPER" | "SPECIAL_SWEEPER" | "PHYSICAL_WALL"
@@ -86,24 +86,13 @@ export interface TeamResult {
   solver: string;
   solve_time_seconds: number;
   members: TeamMemberResult[];
-  generation_history?: GenerationStat[];
   error?: string;
-}
-
-export interface GenerationStat {
-  generation: number;
-  best_fitness: number;
-  mean_fitness: number;
-  best_team_names?: string[];
-  converged?: boolean;
 }
 
 export interface OptimizeResponse {
   pool_size: number;
   results: {
     ilp?: TeamResult;
-    genetic?: TeamResult;
-    greedy?: TeamResult;
   };
 }
 
@@ -173,7 +162,7 @@ export const PLAY_STYLE_LABELS: Record<PlayStyle, { label: string; icon: string;
   HYPER_OFFENSE: {
     label: "Hyper Offense",
     icon: "⚡",
-    description: "All-out attacking. Fast, frail Pokemon that overwhelm before the opponent reacts.",
+    description: "All-out attacking. Fast, frail Pokémon that overwhelm before the opponent reacts.",
   },
   BALANCED: {
     label: "Balanced",
@@ -188,12 +177,12 @@ export const PLAY_STYLE_LABELS: Record<PlayStyle, { label: string; icon: string;
   WEATHER: {
     label: "Weather",
     icon: "🌧️",
-    description: "Build around a weather condition to empower a core of synergistic Pokemon.",
+    description: "Build around a weather condition to empower a core of synergistic Pokémon.",
   },
   TRICK_ROOM: {
     label: "Trick Room",
     icon: "🔮",
-    description: "Invert Speed priority so slow, powerful Pokemon move first.",
+    description: "Invert Speed priority so slow, powerful Pokémon move first.",
   },
   SETUP_SWEEPER: {
     label: "Setup Sweeper",

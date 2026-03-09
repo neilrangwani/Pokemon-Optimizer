@@ -1,26 +1,59 @@
-# Pokemon Team Optimizer
+# Pokémon Team Optimizer
+
+I studied Operations Research in college and became fascinated by how mathematical optimization can be applied to nearly any decision-making problem — portfolio management, transportation routing, workforce scheduling, supply chain allocation. The underlying techniques are the same; only the domain changes.
+
+This project applies one of those techniques — **Integer Linear Programming** — to a problem everyone in my life suddenly cared about: building a great Pokémon team. Nintendo re-released FireRed and LeafGreen in 2025, and half my friends were playing Pokémon again for the first time since middle school, arguing about which team was best. I figured: there's a right answer to this. Let's find it.
 
 **Multi-objective combinatorial optimizer for Pokémon team composition.**
 
-Selects the optimal 6-Pokémon team from a configurable pool using Integer Linear Programming — a technique from operations research with direct analogs in portfolio construction, sports drafting, and resource allocation.
+Given a pool of eligible Pokémon, it selects the optimal team of 6 — maximizing type coverage, balancing stat roles, and minimizing shared weaknesses — using ILP, an exact solver that guarantees the globally optimal solution.
 
 ---
 
-## Why This Is Interesting (Not Just Because It's Pokémon)
+## Why This Problem Is Interesting
 
-Picking a team of 6 from 1,025+ Pokémon is a **combinatorial optimization problem** with a search space of C(1025, 6) ≈ **1.5 trillion** possible teams. Brute-force evaluation at 1μs per team would take ~48 years.
+Picking a team of 6 from 150+ Pokémon sounds simple. It isn't.
 
-This project solves it exactly — finding the provably optimal team in under 3 seconds — using ILP.
+The number of possible teams from a Gen I pool of 151 Pokémon is:
 
-The same framework applies to:
+**C(151, 6) = 17,259,390 combinations**
 
-| This Problem | Real-World Analog |
+Across Gen I–III (roughly 495 Pokémon after filtering alternate forms and legendaries), that grows to:
+
+**C(495, 6) ≈ 2.5 billion combinations**
+
+Evaluating each one by brute force — even at 1 microsecond per team — would take nearly an hour. And this is before accounting for the fact that "best" is multi-dimensional: a team can be strong offensively but fragile defensively, or stat-balanced but role-redundant. You're optimizing across five objectives simultaneously.
+
+This is exactly the class of problem that Integer Linear Programming is built for. ILP finds the provably optimal solution — not a good guess, not a heuristic — in under 3 seconds.
+
+---
+
+## The Real-World Analogy
+
+The math here is identical to problems that come up in finance, sports, and logistics:
+
+| Pokémon Problem | Real-World Analog |
 |---|---|
 | Pick 6 Pokémon covering all 18 types | Portfolio diversification across asset classes |
-| Minimize shared weaknesses | Minimize correlated downside risk |
-| Balance offense/defense/speed roles | Balance growth/value/bond allocations |
-| Anchor constraints ("must include Pikachu") | Position constraints in fantasy sports drafting |
+| Minimize shared type weaknesses | Minimize correlated downside risk |
+| Balance offense / defense / speed roles | Balance growth / value / income allocations |
+| Anchor constraints ("must include Charizard") | Position constraints in fantasy sports drafting |
 | Multi-objective weighting (play style) | Risk-adjusted return optimization |
+| Cartridge mode (only catchable Pokémon) | Liquidity-constrained portfolio construction |
+
+---
+
+## How ILP Works (Plain English)
+
+An Integer Linear Program is an optimization problem where you're trying to maximize (or minimize) some objective, subject to a set of constraints — and some of your variables must be whole numbers (integers), not fractions.
+
+In this case:
+
+- **Decision variables:** For each Pokémon in the pool, a binary variable `x_i ∈ {0, 1}` — is Pokémon *i* on the team or not?
+- **Objective:** Maximize a weighted combination of type coverage, defensive synergy, stat balance, role diversity, and play-style fitness.
+- **Constraints:** Exactly 6 team members. If a type is "covered," at least one team member must cover it. Anchor Pokémon are locked in (`x_i = 1`).
+
+The solver — CBC, an open-source branch-and-bound solver accessed via [PuLP](https://coin-or.github.io/pulp/) — systematically searches the space of valid integer solutions, pruning branches that can't improve on the best solution found so far. It guarantees optimality.
 
 ---
 
@@ -29,7 +62,7 @@ The same framework applies to:
 Let *n* be the eligible pool size. Define:
 
 - **x_i ∈ {0, 1}** — whether Pokémon *i* is on the team
-- **y_t ∈ {0, 1}** — whether type *t* is covered offensively  
+- **y_t ∈ {0, 1}** — whether type *t* is covered offensively
 - **z_r ∈ {0, 1}** — whether role *r* (sweeper, wall, support, …) is represented
 
 **Objective** (maximize):
@@ -39,6 +72,7 @@ max  w₁·(1/18)·Σ_t y_t          [offensive coverage]
    + w₂·defensive_synergy(x)     [shared weakness penalty]
    + w₃·stat_archetype(x, z)     [stat distribution]
    + w₄·(1/6)·Σ_r z_r           [role diversity]
+   + w₅·(1/6)·Σ_i fitness_i·x_i [play-style fitness]
 ```
 
 **Subject to:**
@@ -51,21 +85,36 @@ x_i = 1   for anchor Pokémon          (hard lock constraints)
 x_i ∈ {0, 1},  y_t ∈ {0, 1}          (integrality)
 ```
 
-The non-linear components (defensive synergy, stat variance) are **linearized** using auxiliary variables before passing to the CBC branch-and-bound solver via [PuLP](https://coin-or.github.io/pulp/).
+The non-linear components (defensive synergy, stat variance) are **linearized** using auxiliary variables before passing to the CBC solver.
 
 ---
 
 ## Scoring Model
 
-Five components, each normalized to [0, 1], weighted into a composite score in [0, 100]:
+Five components, each normalized to [0, 100], combined into a composite optimization score:
 
 | Component | What It Measures |
 |---|---|
-| **Offensive Coverage** | For each of the 18 types, does the team have at least one super-effective move? Weighted by type frequency in competitive play. |
-| **Defensive Synergy** | Penalizes exponentially for each type that hits 3+ team members super-effectively. Rewards type immunities. |
-| **Stat Distribution** | Rewards teams that cover multiple stat archetypes: fast attacker, physical wall, special wall, bulky attacker, speed control. Penalizes redundancy. |
-| **Role Diversity** | Classifies each Pokémon by competitive role (Physical Sweeper, Special Sweeper, Physical Wall, Special Wall, Support, Mixed) based on stat ratios. Rewards coverage of multiple roles. |
-| **Moveset Quality** | Rewards STAB moves, coverage moves that extend type reach, and utility moves. Requires moveset data from the pool. |
+| **Offensive Coverage** | How many of the 18 types can the team hit super-effectively via STAB? |
+| **Defensive Synergy** | How often do 3+ team members share the same weakness? Penalizes vulnerability stacking. |
+| **Stat Distribution** | Does the team cover multiple stat archetypes — fast attacker, physical wall, special wall, bulk? Penalizes redundancy. |
+| **Role Diversity** | Are multiple competitive roles represented? Roles are classified from stat ratios: Physical Sweeper, Special Sweeper, Physical Wall, Special Wall, Support, Mixed. |
+| **Play-Style Fitness** | How well does each Pokémon's stat profile match the chosen play style? Hyper Offense rewards attack + speed; Stall rewards defense + bulk; Trick Room rewards power paired with low speed. |
+
+---
+
+## Play Styles
+
+The optimizer supports six play styles, each shifting the scoring weights and fitness function:
+
+| Style | Strategy |
+|---|---|
+| **Balanced** | Even weight across all five components |
+| **Hyper Offense** | Prioritizes fast, high-attack Pokémon; deprioritizes defense |
+| **Stall** | Prioritizes bulk and special defense; deprioritizes offense |
+| **Trick Room** | Rewards powerful, slow Pokémon that thrive when speed is reversed |
+| **Setup Sweeper** | Rewards mixed attackers who can snowball after one turn of setup |
+| **Weather** | Rewards Pokémon that synergize with Rain, Sun, Sand, or Snow |
 
 ---
 
@@ -76,17 +125,15 @@ optimizer/
 ├── models.py          Pydantic v2 data models (Pokemon, Team, OptimizeRequest, …)
 ├── scoring.py         5-component team scoring + role classification
 ├── ilp_solver.py      PuLP ILP formulation → CBC solver
-├── ga_solver.py       Genetic algorithm (reference implementation)
-├── greedy_solver.py   Greedy + 1-opt local search (fast baseline)
-└── constraints.py     Pool filtering (generation, availability, BST, legendaries)
+└── constraints.py     Pool filtering (generation, availability, legendaries, forms)
 
 api/
-└── main.py            FastAPI server; POST /optimize returns ILP team
+└── main.py            FastAPI server; POST /optimize → ILP team
 
 data/
 ├── fetch_pokeapi.py   Async PokéAPI scraper → pokemon.json (run once)
 ├── type_chart.json    Static 18×18 Gen 6+ effectiveness matrix
-└── pokemon.json       Pre-built dataset of ~1025 Pokémon
+└── pokemon.json       Pre-built dataset (~1025 Pokémon with availability data)
 
 frontend/
 └── src/
@@ -94,7 +141,7 @@ frontend/
     ├── hooks/useOptimizer.ts           Async optimizer state management
     ├── components/ConfigPanel/         Generation, Play Style, Anchor, Availability
     ├── components/ResultsPanel/        Team cards with stat bars + role labels
-    └── components/AnalysisPanel/       Recharts RadarChart overlay
+    └── components/AnalysisPanel/       Radar chart, type coverage, ILP formulation
 ```
 
 ---
@@ -131,23 +178,10 @@ Open **http://localhost:5173**.
 
 ---
 
-## Results
-
-On the Gen I–III pool (495 Pokémon, C(495, 6) ≈ 2.5 billion teams):
-
-| Solver | Score | Time |
-|---|---|---|
-| ILP (exact) | 87–92 / 100 | 0.5–3s |
-| Greedy + 1-opt | 83–88 / 100 | <0.1s |
-
-ILP achieves 3–5% higher scores than greedy at the cost of ~10× more solve time — a reasonable tradeoff for an interactive tool.
-
----
-
 ## Tests
 
 ```bash
 uv run pytest tests/ -v
 ```
 
-20 unit tests covering scoring components, role classification, and composite score behavior. All tests use hand-crafted Pokémon objects (no file I/O, fully deterministic).
+Unit tests covering scoring components, role classification, and composite score behavior. All tests use hand-crafted Pokémon objects — no file I/O, fully deterministic.
