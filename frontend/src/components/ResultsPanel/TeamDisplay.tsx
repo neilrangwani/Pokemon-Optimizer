@@ -196,9 +196,9 @@ function PokemonDetail({ member }: { member: TeamMemberResult }) {
       className="rounded border p-4 bg-[#FAFAF2] transition-all"
       style={{ borderColor: "#CC0000" }}
     >
-      <div className="flex gap-5">
+      <div className="flex flex-col sm:flex-row gap-4">
         {/* Left: sprite + name + types + role */}
-        <div className="flex flex-col items-center gap-1.5 flex-shrink-0 w-24">
+        <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-1.5 sm:w-24 flex-shrink-0">
           {member.sprite_url ? (
             <img
               src={member.sprite_url}
@@ -227,6 +227,8 @@ function PokemonDetail({ member }: { member: TeamMemberResult }) {
           )}
         </div>
 
+        {/* Middle + Right: on mobile, these sit side by side in a row */}
+        <div className="flex flex-1 gap-4 min-w-0">
         {/* Middle: stat bars */}
         <div className="flex-1 space-y-1.5 min-w-0">
           <p className="text-[9px] font-semibold text-[#9090B0] uppercase tracking-wider mb-2">
@@ -242,7 +244,7 @@ function PokemonDetail({ member }: { member: TeamMemberResult }) {
 
         {/* Right: abilities */}
         {member.abilities.length > 0 && (
-          <div className="flex-shrink-0 min-w-[100px]">
+          <div className="flex-shrink-0 min-w-[80px]">
             <p className="text-[9px] font-semibold text-[#9090B0] uppercase tracking-wider mb-2">
               Abilities
             </p>
@@ -260,6 +262,7 @@ function PokemonDetail({ member }: { member: TeamMemberResult }) {
             </div>
           </div>
         )}
+        </div>{/* end middle+right row */}
       </div>
     </div>
   );

@@ -32,12 +32,16 @@ const DEFAULT_REQUEST: OptimizeRequest = {
   solver: "ilp",
 };
 
+type MobileTab = "config" | "results" | "analysis";
+
 export default function App() {
   const [request, setRequest] = useState<OptimizeRequest>(DEFAULT_REQUEST);
   // selectedMember — the ONE member whose detail pane is open (card/radar click)
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   // highlightedMembers — cards with a colored border (can be multiple, e.g. after clicking a type vulnerability)
   const [highlightedMembers, setHighlightedMembers] = useState<string[]>([]);
+  // Mobile tab navigation
+  const [activeTab, setActiveTab] = useState<MobileTab>("config");
   const [poolCandidates, setPoolCandidates] = useState<{ name: string; display_name: string }[]>([]);
   const { state, optimize, cancel } = useOptimizer();
 
@@ -84,6 +88,11 @@ export default function App() {
     optimize(request);
   };
 
+  // Auto-switch to results tab on mobile when optimization completes
+  useEffect(() => {
+    if (state.status === "done") setActiveTab("results");
+  }, [state.status]);
+
   return (
     <div className="h-screen bg-[#0D0D1A] flex flex-col font-['Inter'] overflow-hidden">
       {/* Top nav */}
@@ -110,11 +119,11 @@ export default function App() {
         </span>
       </header>
 
-      {/* Main 3-column layout — each panel scrolls independently */}
+      {/* Main layout — 3 columns on desktop, 2 on tablet, tab-based on mobile */}
       <div className="flex flex-1 overflow-hidden min-h-0">
 
-        {/* LEFT: Config sidebar */}
-        <aside className="w-64 bg-[#1A1A2E] border-r border-[#2A2A3E] flex flex-col flex-shrink-0 overflow-hidden">
+        {/* LEFT: Config sidebar — full width on mobile (config tab), fixed w-64 on md+ */}
+        <aside className={`bg-[#1A1A2E] border-r border-[#2A2A3E] flex-col flex-shrink-0 overflow-hidden md:flex md:w-64 ${activeTab === "config" ? "flex flex-1 w-full" : "hidden"}`}>
           <div className="bg-[#CC0000] h-1 w-full flex-shrink-0" />
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 space-y-5">
@@ -253,8 +262,11 @@ export default function App() {
           </div>
         </aside>
 
-        {/* CENTER: Results panel */}
-        <main className="flex-1 overflow-y-auto p-5 min-w-0">
+        {/* RIGHT AREA: Results + Analysis — hidden on mobile when config tab active */}
+        <div className={`flex-1 flex overflow-hidden min-w-0 flex-col xl:flex-row md:flex ${activeTab === "config" ? "hidden" : "flex"}`}>
+
+        {/* CENTER: Results panel — hidden on mobile when analysis tab active */}
+        <main className={`flex-1 overflow-y-auto p-5 min-w-0 xl:flex-1 ${activeTab === "analysis" ? "hidden xl:block" : ""}`}>
           {state.status === "idle" && (
             <div className="h-full flex items-center justify-center">
               <div className="text-center space-y-4">
@@ -311,8 +323,8 @@ export default function App() {
           )}
         </main>
 
-        {/* RIGHT: Analysis panel */}
-        <aside className="w-72 bg-[#1A1A2E] border-l border-[#2A2A3E] flex-shrink-0 overflow-hidden flex flex-col">
+        {/* RIGHT: Analysis panel — full width on mobile (analysis tab), stacks below results on tablet, fixed sidebar on desktop */}
+        <aside className={`bg-[#1A1A2E] flex-col overflow-hidden xl:flex xl:w-72 xl:flex-shrink-0 xl:border-l xl:border-[#2A2A3E] md:border-t md:border-[#2A2A3E] md:flex md:flex-shrink-0 ${activeTab === "analysis" ? "flex flex-1" : "hidden"}`}>
           <div className="flex-1 overflow-y-auto p-4">
             <h2 className="text-[10px] font-['Press_Start_2P'] text-[#FAFAF2] mb-4">
               ANALYSIS
@@ -404,7 +416,27 @@ export default function App() {
             )}
           </div>
         </aside>
-      </div>
+        </div>{/* end right-area */}
+      </div>{/* end main columns */}
+
+      {/* Mobile bottom tab bar */}
+      <nav className="md:hidden flex-shrink-0 flex border-t border-[#2A2A3E] bg-[#1A1A2E]">
+        {([
+          { tab: "config",   label: "Configure", icon: "⚙" },
+          { tab: "results",  label: "Team",      icon: "◉" },
+          { tab: "analysis", label: "Analysis",  icon: "📊" },
+        ] as const).map(({ tab, label, icon }) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="flex-1 py-3 flex flex-col items-center gap-1 transition-colors"
+            style={{ color: activeTab === tab ? "#CC0000" : "#4A4A5A" }}
+          >
+            <span className="text-base leading-none">{icon}</span>
+            <span className="text-[9px] font-['Press_Start_2P']">{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
