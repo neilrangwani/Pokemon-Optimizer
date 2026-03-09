@@ -1,12 +1,21 @@
 # Pokémon Team Optimizer
 
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+**Selects the optimal Pokémon team of 6 using Integer Linear Programming — guaranteed globally optimal, not a heuristic.**
+
+> Picks from Gen I–III (495 Pokémon, C(495,6) ≈ 2.5 billion possible teams) in under 3 seconds.
+
+![App screenshot](docs/screenshot.png)
+
+---
+
 I studied Operations Research in college and became fascinated by how mathematical optimization can be applied to nearly any decision-making problem — portfolio management, transportation routing, workforce scheduling, supply chain allocation. The underlying techniques are the same; only the domain changes.
 
-This project applies one of those techniques — **Integer Linear Programming** — to a problem everyone in my life suddenly cared about: building a great Pokémon team. Nintendo re-released FireRed and LeafGreen in 2025, and half my friends were playing Pokémon again for the first time since middle school, arguing about which team was best. I figured: there's a right answer to this. Let's find it.
-
-**Multi-objective combinatorial optimizer for Pokémon team composition.**
-
-Given a pool of eligible Pokémon, it selects the optimal team of 6 — maximizing type coverage, balancing stat roles, and minimizing shared weaknesses — using ILP, an exact solver that guarantees the globally optimal solution.
+This project applies one of those techniques — **Integer Linear Programming (ILP)** — to a problem everyone in my life suddenly cared about: building a great Pokémon team. Nintendo re-released FireRed and LeafGreen in 2026, and half my friends were playing for the first time since middle school, arguing about which team was best. I figured: there's a right answer to this. Let's find it.
 
 ---
 
