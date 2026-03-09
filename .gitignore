@@ -9,8 +9,7 @@ dist/
 # uv
 .python-version
 
-# Data (large files - regenerate with fetch_pokeapi.py)
-data/pokemon.json
+# Data (raw downloaded files)
 data/raw/
 
 # Frontend

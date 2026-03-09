@@ -1,0 +1,114 @@
+{
+  "_comment": "Hand-curated EVENT-tier Pokemon. event_games = games where this Pokemon was ONLY obtainable via a real-world Mystery Gift or promotional event (no longer reproducible). non_event_games = games where it IS normally obtainable (overrides event status).",
+
+  "mew": {
+    "event_games": ["red", "blue", "yellow", "gold", "silver", "crystal", "firered", "leafgreen", "diamond", "pearl", "platinum", "heartgold", "soulsilver", "black", "white", "black2", "white2", "x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": [],
+    "note": "Gen 1 Nintendo Power/CES promotional event (1996–1999). Available via My Pokemon Ranch (Platinum, JP), and Pokemon GO transfer in later games."
+  },
+  "celebi": {
+    "event_games": ["gold", "silver", "crystal", "ruby", "sapphire", "emerald", "firered", "leafgreen", "diamond", "pearl", "platinum", "heartgold", "soulsilver", "black", "white", "black2", "white2", "x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": [],
+    "note": "Distribution-only mythical. Crystal (US/EU) via Nintendo Space World event. Ilex Shrine in HeartGold/SoulSilver requires GS Ball event item (JP only)."
+  },
+  "jirachi": {
+    "event_games": ["ruby", "sapphire", "emerald", "firered", "leafgreen", "diamond", "pearl", "platinum", "heartgold", "soulsilver", "black", "white", "black2", "white2"],
+    "non_event_games": [],
+    "note": "Colosseum Bonus Disc (US/EU), Channel (JP), various Mystery Gift events."
+  },
+  "deoxys": {
+    "event_games": ["firered", "leafgreen"],
+    "non_event_games": ["emerald", "omegaruby", "alphasapphire"],
+    "note": "Aurora Ticket via Mystery Gift in FRLG (event ended 2005). Normally obtainable in Emerald (Birth Island, also via Aurora Ticket but Emerald allows it via e-reader in JP) and ORAS (Sky Pillar area)."
+  },
+  "darkrai": {
+    "event_games": ["diamond", "pearl", "platinum"],
+    "non_event_games": ["brilliantdiamond", "shiningpearl"],
+    "note": "Member Card Mystery Gift in DPPt (event ended 2008). Normally available in BDSP via Darkrai Oak's Letter."
+  },
+  "shaymin": {
+    "event_games": ["diamond", "pearl", "platinum"],
+    "non_event_games": ["brilliantdiamond", "shiningpearl"],
+    "note": "Oak's Letter Mystery Gift in DPPt (event ended 2009). Available normally in BDSP."
+  },
+  "arceus": {
+    "event_games": ["diamond", "pearl", "platinum", "heartgold", "soulsilver"],
+    "non_event_games": ["brilliantdiamond", "shiningpearl", "legendsarceus"],
+    "note": "Azure Flute Mystery Gift (never officially distributed in DPPt). Hall of Origin. Normally obtainable in BDSP and Legends: Arceus."
+  },
+  "victini": {
+    "event_games": [],
+    "non_event_games": ["black", "white"],
+    "note": "Liberty Pass Mystery Gift in BW — was a timed event but the Pokemon itself is normally obtainable in-game via the Pass."
+  },
+  "keldeo": {
+    "event_games": ["black", "white", "black2", "white2", "x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": ["sword", "shield"],
+    "note": "Distribution-only in Gen 5/6. Normally available in Sword/Shield via Isle of Armor DLC."
+  },
+  "meloetta": {
+    "event_games": ["black", "white", "black2", "white2", "x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": [],
+    "note": "Global Link distribution event (2012–2013)."
+  },
+  "genesect": {
+    "event_games": ["black", "white", "black2", "white2", "x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": ["sword", "shield"],
+    "note": "Distribution-only in Gen 5/6. Available via Pokemon HOME events in Gen 8."
+  },
+  "diancie": {
+    "event_games": ["x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": [],
+    "note": "Serial code / wireless distribution event (2014–2015)."
+  },
+  "hoopa": {
+    "event_games": ["x", "y", "omegaruby", "alphasapphire"],
+    "non_event_games": [],
+    "note": "Pokemon Center serial code event (2015)."
+  },
+  "volcanion": {
+    "event_games": ["x", "y", "omegaruby", "alphasapphire", "sun", "moon", "ultrasun", "ultramoon"],
+    "non_event_games": [],
+    "note": "Serial code / distributions (2016). Never normally obtainable in-game."
+  },
+  "magearna": {
+    "event_games": ["sun", "moon", "ultrasun", "ultramoon"],
+    "non_event_games": ["sword", "shield"],
+    "note": "QR code scan in SM/USUM (QR scanner functionality now disabled). Available via Pokemon HOME in Gen 8."
+  },
+  "marshadow": {
+    "event_games": ["sun", "moon", "ultrasun", "ultramoon"],
+    "non_event_games": [],
+    "note": "Serial code distribution tied to Pokemon the Movie: I Choose You (2017)."
+  },
+  "zeraora": {
+    "event_games": ["ultrasun", "ultramoon", "sword", "shield"],
+    "non_event_games": [],
+    "note": "Serial code event distributions (2018, 2020). Never normally obtainable in-game."
+  },
+  "meltan": {
+    "event_games": [],
+    "non_event_games": ["letsgopikachu", "letsgoeevee"],
+    "note": "Obtainable via Pokemon GO Mystery Box transfer to Let's Go. Not a typical event Pokemon — included for accuracy."
+  },
+  "melmetal": {
+    "event_games": [],
+    "non_event_games": ["letsgopikachu", "letsgoeevee", "sword", "shield"],
+    "note": "Evolved from Meltan via 400 candies in GO, then transferred. Also via Pokemon HOME (Crown Tundra era)."
+  },
+  "zarude": {
+    "event_games": ["sword", "shield"],
+    "non_event_games": [],
+    "note": "Serial code tied to Secrets of the Jungle movie and Pokemon Jungle promotional codes (2020–2021)."
+  },
+  "glastrier": {
+    "event_games": [],
+    "non_event_games": ["sword", "shield"],
+    "note": "Crown Tundra DLC — normally obtainable but version-exclusive path."
+  },
+  "spectrier": {
+    "event_games": [],
+    "non_event_games": ["sword", "shield"],
+    "note": "Crown Tundra DLC — normally obtainable but version-exclusive path."
+  }
+}
