@@ -12,9 +12,11 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from optimizer import ilp_solver
@@ -212,3 +214,13 @@ def _team_to_dict(team: Team) -> dict:
             for m in team.members
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# Static files — serve the built React frontend (production / Vercel)
+# Must be mounted LAST so API routes take priority.
+# ---------------------------------------------------------------------------
+
+_static_dir = Path(__file__).parent.parent / "frontend" / "dist"
+if _static_dir.exists():
+    app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")

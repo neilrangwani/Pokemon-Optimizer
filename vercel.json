@@ -1,10 +1,11 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/main.py": {
+      "includeFiles": "frontend/dist/**"
+    }
+  },
   "rewrites": [
-    { "source": "/optimize",     "destination": "/api/main" },
-    { "source": "/pokemon/pool", "destination": "/api/main" },
-    { "source": "/health",       "destination": "/api/main" },
-    { "source": "/score",        "destination": "/api/main" }
+    { "source": "/(.*)", "destination": "/api/main" }
   ]
 }
