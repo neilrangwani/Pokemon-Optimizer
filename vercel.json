@@ -1,10 +1,22 @@
 {
-  "buildCommand": "cd frontend && npm ci && npm run build",
-  "outputDirectory": "frontend/dist",
-  "rewrites": [
-    { "source": "/optimize",        "destination": "/api/main" },
-    { "source": "/pokemon/:path*",  "destination": "/api/main" },
-    { "source": "/health",          "destination": "/api/main" },
-    { "source": "/score",           "destination": "/api/main" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "api/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    { "src": "/optimize",       "dest": "/api/main" },
+    { "src": "/pokemon/pool",   "dest": "/api/main" },
+    { "src": "/health",         "dest": "/api/main" },
+    { "src": "/score",          "dest": "/api/main" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)",           "dest": "/index.html" }
   ]
 }
