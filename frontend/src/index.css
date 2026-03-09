@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  display: block;
+  background-color: #0D0D1A;
+}
+
+/* Pixelated rendering for Gen 3 sprites */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
