@@ -9,6 +9,8 @@
 
 > Picks from Gen I–III (495 Pokémon, C(495,6) ≈ 2.5 billion possible teams) in under 3 seconds.
 
+![App screenshot](docs/screenshot.png)
+
 ---
 
 I studied Operations Research in college and became fascinated by how mathematical optimization can be applied to nearly any decision-making problem — portfolio management, transportation routing, workforce scheduling, supply chain allocation. The underlying techniques are the same; only the domain changes.
